@@ -28,10 +28,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
       show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 server:
   # Local MVP: bind loopback only (override with SERVER_ADDRESS if needed).

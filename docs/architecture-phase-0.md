@@ -272,9 +272,9 @@ public record FetchCursor(String opaque) {} // e.g. file byte offset / page toke
 | **3** | File ingestion pipeline (`LogSource` + File source; parsers; checkpointing; wire errors to incidents). **Done** |
 | **4** | Threshold/spike detection + trace/temporal correlation + evidence links. **Done** — see `internal/phase-4-completion.md` |
 | **5** | Query API / REST-CLI polish: sources, incidents, evidence, honest NoOp investigation. **Done** — see `docs/api-cli.md` |
-| **6** | Optional real AI provider (NoOp already present); optional GCP adapter |
-| **7** | Hardening: validation, redaction basics, Dockerfile (Java 25 base) |
-| **8** | Polish: sample datasets, docs, demo script; quality gate (coverage on domain) |
+| **6** | AI investigator (noop/fake/openai) + persisted reports. **Done** — `docs/investigation-ai.md` |
+| **7** | GCP Cloud Logging connector (ADC pull). **Done** — `docs/connectors.md` (live GCP not verified) |
+| **8** | E2E validation + hardening docs/Docker. **Done** — `docs/mvp-status.md` |
 
 > **Note:** Phase numbering in active briefs supersedes the original Phase 0 draft where Phase 2 was ingest.
 
