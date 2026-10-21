@@ -4,14 +4,22 @@ Local modular-monolith MVP for log ingestion, deterministic detection/correlatio
 
 **Stack:** Java **25** + Spring Boot **4.1.1** · PostgreSQL 16 · Flyway · Maven Wrapper  
 
+## Branch
+
+Local integration branch: **`develop`** (full MVP tip). Feature branches `cursor/phase-*` remain for history.
+
 ## Quick start (local)
 
 ```bash
 # JDK 25 required (default shell JDK 21 will fail the release flag)
-export JAVA_HOME=$(/usr/libexec/java_home -v 25)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)   # or Corretto 25 path
 
-cp .env.example .env
-docker compose up -d postgres
+git checkout develop
+cp -n .env.example .env   # edit POSTGRES_PORT if 5432 is busy (example uses 5433)
+
+docker compose --env-file .env up -d postgres
+# wait until healthy, then load env for the app:
+set -a && source .env && set +a
 
 ./mvnw test
 ./mvnw spring-boot:run
@@ -19,6 +27,8 @@ docker compose up -d postgres
 ```
 
 Bind defaults to **127.0.0.1**. File paths must stay under `logdetective.ingestion.allowlist-base-dir` (`./logs`).
+
+Exact demo commands for Santiago: see Cursor project store `docs/local-demo.md`.
 
 ## Docs
 
