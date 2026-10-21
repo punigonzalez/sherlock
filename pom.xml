@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<spring-ai.version>2.0.1</spring-ai.version>
+		<google-cloud-libraries.version>26.90.0</google-cloud-libraries.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -36,6 +37,13 @@
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-bom</artifactId>
 				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.google.cloud</groupId>
+				<artifactId>libraries-bom</artifactId>
+				<version>${google-cloud-libraries.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -83,6 +91,11 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-openai</artifactId>
+		</dependency>
+		<!-- GCP Cloud Logging (ADC). Disabled by config unless opt-in. -->
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-logging</artifactId>
 		</dependency>
 
 		<dependency>

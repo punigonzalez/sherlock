@@ -60,6 +60,15 @@ logdetective:
     correlation:
       trace-lookback-seconds: ${LOGDETECTIVE_TRACE_LOOKBACK_SECONDS:300}
       temporal-window-seconds: ${LOGDETECTIVE_TEMPORAL_WINDOW_SECONDS:30}
+  gcp-logging:
+    enabled: ${LOGDETECTIVE_GCP_LOGGING_ENABLED:false}
+    source-id: ${LOGDETECTIVE_GCP_SOURCE_ID:gcp-logging}
+    project-id: ${GCP_PROJECT_ID:}
+    filter: ${LOGDETECTIVE_GCP_FILTER:severity>=ERROR}
+    page-size: ${LOGDETECTIVE_GCP_PAGE_SIZE:50}
+    poll-interval-ms: ${LOGDETECTIVE_GCP_POLL_INTERVAL_MS:10000}
+    historical-lookback: ${LOGDETECTIVE_GCP_HISTORICAL_LOOKBACK:PT1H}
+    max-pages-per-poll: ${LOGDETECTIVE_GCP_MAX_PAGES_PER_POLL:3}
   ingestion:
     enabled: ${LOGDETECTIVE_INGESTION_ENABLED:false}
     batch-size: ${LOGDETECTIVE_INGESTION_BATCH_SIZE:100}

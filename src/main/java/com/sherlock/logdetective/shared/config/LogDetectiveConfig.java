@@ -21,6 +21,7 @@ import com.sherlock.logdetective.detection.domain.DetectionRulesConfig;
 import com.sherlock.logdetective.detection.domain.fingerprint.ErrorFingerprintCalculator;
 import com.sherlock.logdetective.detection.port.out.IncidentRepository;
 import com.sherlock.logdetective.ingestion.adapter.in.FileSourceProperties;
+import com.sherlock.logdetective.ingestion.adapter.in.GcpLoggingProperties;
 import com.sherlock.logdetective.ingestion.application.IngestLogsUseCase;
 import com.sherlock.logdetective.ingestion.application.ManageFileSourcesUseCase;
 import com.sherlock.logdetective.ingestion.application.ManageFileSourcesUseCase.SourceRegistryPort;
@@ -52,6 +53,7 @@ import org.springframework.ai.chat.model.ChatModel;
 @EnableScheduling
 @EnableConfigurationProperties({
 		FileSourceProperties.class,
+		GcpLoggingProperties.class,
 		DetectionProperties.class,
 		InvestigationProperties.class
 })
