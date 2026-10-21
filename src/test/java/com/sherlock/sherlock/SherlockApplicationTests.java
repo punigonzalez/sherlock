@@ -33,12 +33,14 @@ class SherlockApplicationTests {
 	}
 
 	@Test
-	void flywayBaselineApplied() {
-		Integer count = jdbcTemplate.queryForObject(
-				"SELECT COUNT(*) FROM app_schema_meta WHERE schema_version = ?",
-				Integer.class,
-				"phase-1-baseline"
-		);
-		assertThat(count).isEqualTo(1);
+	void flywayMigrationsAppliedThroughPhase2() {
+		assertThat(jdbcTemplate.queryForObject(
+				"SELECT COUNT(*) FROM flyway_schema_history WHERE success = true",
+				Integer.class
+		)).isGreaterThanOrEqualTo(2);
+		assertThat(jdbcTemplate.queryForObject(
+				"SELECT schema_version FROM app_schema_meta WHERE id = 1",
+				String.class
+		)).isEqualTo("phase-2-incidents");
 	}
 }

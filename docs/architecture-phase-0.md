@@ -267,15 +267,15 @@ public record FetchCursor(String opaque) {} // e.g. file byte offset / page toke
 | Phase | Goal |
 |-------|------|
 | **1** | Keep Boot 4.1.1 / Java 25; Docker Compose PostgreSQL; Flyway baseline; hexagonal skeleton; health/`contextLoads` green under JDK 25 |
-| **2** | `LogSource` + File source; canonical event persist; ingest API/CLI; idempotency |
-| **3** | Rule engine + incident creation (deterministic) |
-| **4** | Evidence correlation from events/matches |
-| **5** | Query API: incidents, events, evidence |
-| **6** | `AiInvestigator` port + Fake/NoOp; optional GCP adapter |
-| **7** | Hardening: validation, redaction basics, actuator, Dockerfile (Java 25 base) |
+| **2** | Domain model + error fingerprints + incident lifecycle + JPA persistence (grouping by fingerprint). **Done** — see `internal/phase-2-completion.md` |
+| **3** | File ingestion pipeline (`LogSource` + File source; canonical event ingest; idempotency) |
+| **4** | Detection rules / correlation engines beyond fingerprint grouping |
+| **5** | Query API / REST-CLI polish: incidents, events, evidence |
+| **6** | Optional real AI provider (NoOp already present); optional GCP adapter |
+| **7** | Hardening: validation, redaction basics, Dockerfile (Java 25 base) |
 | **8** | Polish: sample datasets, docs, demo script; quality gate (coverage on domain) |
 
-No Phase 1 implementation in this deliverable.
+> **Note:** Phase numbering in active briefs supersedes the original Phase 0 draft where Phase 2 was ingest.
 
 ---
 
