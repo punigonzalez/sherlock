@@ -28,8 +28,8 @@ import com.sherlock.logdetective.ingestion.application.ManageFileSourcesUseCase;
 import com.sherlock.logdetective.ingestion.application.ManageFileSourcesUseCase.ValidationResult;
 import com.sherlock.logdetective.ingestion.domain.EventLevel;
 import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase;
-import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase.InvestigationStatus;
 import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase.InvestigationView;
+import com.sherlock.logdetective.investigation.domain.InvestigationReport.InvestigationStatus;
 import com.sherlock.logdetective.shared.domain.PageResult;
 
 class CliFacadeTest {
@@ -92,10 +92,15 @@ class CliFacadeTest {
 		UUID id = UUID.randomUUID();
 		RequestInvestigationUseCase investigation = mock(RequestInvestigationUseCase.class);
 		when(investigation.request(id)).thenReturn(Optional.of(new InvestigationView(
+				UUID.randomUUID(),
 				id,
 				InvestigationStatus.NOOP_UNAVAILABLE,
+				"noop",
 				true,
 				"AI investigation disabled (NoOp).",
+				"",
+				"NONE",
+				List.of(),
 				List.of(),
 				Instant.parse("2026-10-20T15:00:00Z")
 		)));

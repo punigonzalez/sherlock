@@ -13,10 +13,13 @@ public final class InvestigateIncidentUseCase {
 	private final AiInvestigator aiInvestigator;
 
 	public InvestigateIncidentUseCase(AiInvestigator aiInvestigator) {
-		this.aiInvestigator = Objects.requireNonNull(aiInvestigator, "aiInvestigator");
+		this.aiInvestigator = Objects.requireNonNull(aiInvestigator);
 	}
 
 	public InvestigationReport investigate(UUID incidentId, List<EvidenceId> evidenceIds) {
-		return aiInvestigator.investigate(incidentId, evidenceIds);
+		return aiInvestigator.investigate(
+				Objects.requireNonNull(incidentId),
+				evidenceIds == null ? List.of() : evidenceIds
+		);
 	}
 }

@@ -14,11 +14,6 @@ public final class NoOpAiInvestigator implements AiInvestigator {
 
 	@Override
 	public InvestigationReport investigate(UUID incidentId, List<EvidenceId> evidenceIds) {
-		List<EvidenceId> citations = evidenceIds == null ? List.of() : List.copyOf(evidenceIds);
-		return new InvestigationReport(
-				incidentId,
-				"AI investigation disabled (NoOp). Deterministic detection remains available.",
-				citations
-		);
+		return InvestigationReport.noop(incidentId, evidenceIds == null ? List.of() : evidenceIds);
 	}
 }

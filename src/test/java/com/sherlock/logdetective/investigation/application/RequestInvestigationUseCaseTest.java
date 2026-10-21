@@ -3,6 +3,7 @@ package com.sherlock.logdetective.investigation.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,31 +22,87 @@ import com.sherlock.logdetective.detection.domain.IncidentStatus;
 import com.sherlock.logdetective.detection.domain.Severity;
 import com.sherlock.logdetective.detection.port.out.IncidentRepository;
 import com.sherlock.logdetective.ingestion.domain.EventLevel;
+import com.sherlock.logdetective.investigation.adapter.out.FakeAiInvestigator;
 import com.sherlock.logdetective.investigation.adapter.out.NoOpAiInvestigator;
-import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase.InvestigationStatus;
-import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase.InvestigationView;
+import com.sherlock.logdetective.investigation.domain.InvestigationReport;
+import com.sherlock.logdetective.investigation.domain.InvestigationReport.InvestigationStatus;
+import com.sherlock.logdetective.investigation.port.out.InvestigationReportRepository;
+import com.sherlock.logdetective.investigation.port.out.InvestigationTools;
+import com.sherlock.logdetective.investigation.port.out.InvestigationTools.ToolResult;
 import com.sherlock.logdetective.shared.domain.PageResult;
 
 class RequestInvestigationUseCaseTest {
 
 	@Test
-	void requestMarksNoOpAsUnavailable() {
+	void requestMarksNoOpAsUnavailableAndPersists() {
 		Incident incident = sampleIncident();
 		InMemoryIncidents incidents = new InMemoryIncidents(incident);
+		InMemoryReports reports = new InMemoryReports();
 		RequestInvestigationUseCase useCase = new RequestInvestigationUseCase(
 				incidents,
 				new EmptyEvidence(),
 				new InvestigateIncidentUseCase(new NoOpAiInvestigator()),
-				new NoOpAiInvestigator()
+				reports
 		);
 
-		Optional<InvestigationView> view = useCase.request(incident.id());
+		Optional<RequestInvestigationUseCase.InvestigationView> view = useCase.request(incident.id());
 
 		assertThat(view).isPresent();
 		assertThat(view.get().status()).isEqualTo(InvestigationStatus.NOOP_UNAVAILABLE);
 		assertThat(view.get().aiUnavailable()).isTrue();
 		assertThat(view.get().summary()).contains("NoOp");
+		assertThat(reports.byIncident.get(incident.id())).hasSize(1);
 		assertThat(useCase.latest(incident.id())).isPresent();
+		assertThat(incidents.byId.get(incident.id()).status()).isEqualTo(IncidentStatus.INVESTIGATING);
+	}
+
+	@Test
+	void fakeInvestigatorCompletesWithTools() {
+		Incident incident = sampleIncident();
+		InMemoryIncidents incidents = new InMemoryIncidents(incident);
+		InvestigationTools tools = new InvestigationTools() {
+			@Override
+			public ToolResult getIncidentDetails(UUID incidentId) {
+				return ToolResult.ok("getIncidentDetails", "ok", List.of(Map.of("title", incident.title())));
+			}
+
+			@Override
+			public ToolResult getRelatedErrors(UUID incidentId, int limit) {
+				return ToolResult.ok("getRelatedErrors", "ok", List.of());
+			}
+
+			@Override
+			public ToolResult getRecentEvents(int limit) {
+				return ToolResult.ok("getRecentEvents", "ok", List.of());
+			}
+
+			@Override
+			public ToolResult searchLogs(String query, int limit) {
+				return ToolResult.ok("searchLogs", "ok", List.of());
+			}
+
+			@Override
+			public ToolResult getTraceDetails(String traceId, int limit) {
+				return ToolResult.notFound("getTraceDetails", "none");
+			}
+
+			@Override
+			public ToolResult getServiceMetrics(String service) {
+				return ToolResult.unsupported("getServiceMetrics", "n/a");
+			}
+		};
+		RequestInvestigationUseCase useCase = new RequestInvestigationUseCase(
+				incidents,
+				new EmptyEvidence(),
+				new InvestigateIncidentUseCase(new FakeAiInvestigator(tools, 8)),
+				new InMemoryReports()
+		);
+
+		var view = useCase.request(incident.id()).orElseThrow();
+		assertThat(view.status()).isEqualTo(InvestigationStatus.COMPLETED);
+		assertThat(view.provider()).isEqualTo("fake");
+		assertThat(view.toolCalls()).isNotEmpty();
+		assertThat(view.aiUnavailable()).isFalse();
 	}
 
 	@Test
@@ -54,7 +111,7 @@ class RequestInvestigationUseCaseTest {
 				new InMemoryIncidents(null),
 				new EmptyEvidence(),
 				new InvestigateIncidentUseCase(new NoOpAiInvestigator()),
-				new NoOpAiInvestigator()
+				new InMemoryReports()
 		);
 
 		assertThat(useCase.request(UUID.randomUUID())).isEmpty();
@@ -103,6 +160,32 @@ class RequestInvestigationUseCaseTest {
 		@Override
 		public PageResult<Incident> findPage(int page, int size, Optional<IncidentStatus> status) {
 			return PageResult.of(List.of(), page, size, 0);
+		}
+	}
+
+	private static final class InMemoryReports implements InvestigationReportRepository {
+		private final Map<UUID, List<InvestigationReport>> byIncident = new HashMap<>();
+
+		@Override
+		public InvestigationReport save(InvestigationReport report) {
+			byIncident.computeIfAbsent(report.incidentId(), ignored -> new ArrayList<>()).add(report);
+			return report;
+		}
+
+		@Override
+		public Optional<InvestigationReport> findById(UUID id) {
+			return byIncident.values().stream().flatMap(List::stream).filter(r -> r.id().equals(id)).findFirst();
+		}
+
+		@Override
+		public Optional<InvestigationReport> findLatestByIncidentId(UUID incidentId) {
+			List<InvestigationReport> list = byIncident.getOrDefault(incidentId, List.of());
+			return list.isEmpty() ? Optional.empty() : Optional.of(list.getLast());
+		}
+
+		@Override
+		public List<InvestigationReport> findByIncidentId(UUID incidentId) {
+			return List.copyOf(byIncident.getOrDefault(incidentId, List.of()));
 		}
 	}
 

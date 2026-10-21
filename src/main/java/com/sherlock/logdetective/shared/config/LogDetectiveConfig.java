@@ -1,7 +1,9 @@
 package com.sherlock.logdetective.shared.config;
 
 import java.nio.file.Path;
+import java.time.Duration;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,14 +31,30 @@ import com.sherlock.logdetective.ingestion.domain.redaction.BasicRedactionHook;
 import com.sherlock.logdetective.ingestion.domain.redaction.RedactionHook;
 import com.sherlock.logdetective.ingestion.port.out.EventRepository;
 import com.sherlock.logdetective.ingestion.port.out.SourceCheckpointStore;
+import com.sherlock.logdetective.investigation.adapter.in.InvestigationProperties;
+import com.sherlock.logdetective.investigation.adapter.out.FakeAiInvestigator;
 import com.sherlock.logdetective.investigation.adapter.out.NoOpAiInvestigator;
+import com.sherlock.logdetective.investigation.adapter.out.ToolBoundedAiInvestigator;
+import com.sherlock.logdetective.investigation.adapter.out.llm.SpringAiLlmClient;
+import com.sherlock.logdetective.investigation.adapter.out.llm.UnavailableLlmClient;
+import com.sherlock.logdetective.investigation.adapter.out.tools.RepositoryInvestigationTools;
 import com.sherlock.logdetective.investigation.application.InvestigateIncidentUseCase;
 import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase;
+import com.sherlock.logdetective.investigation.domain.PromptSanitizer;
 import com.sherlock.logdetective.investigation.port.out.AiInvestigator;
+import com.sherlock.logdetective.investigation.port.out.InvestigationReportRepository;
+import com.sherlock.logdetective.investigation.port.out.InvestigationTools;
+import com.sherlock.logdetective.investigation.port.out.LlmClient;
+
+import org.springframework.ai.chat.model.ChatModel;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties({ FileSourceProperties.class, DetectionProperties.class })
+@EnableConfigurationProperties({
+		FileSourceProperties.class,
+		DetectionProperties.class,
+		InvestigationProperties.class
+})
 public class LogDetectiveConfig {
 
 	@Bean
@@ -49,8 +67,55 @@ public class LogDetectiveConfig {
 	}
 
 	@Bean
-	AiInvestigator aiInvestigator() {
-		return new NoOpAiInvestigator();
+	PromptSanitizer promptSanitizer(InvestigationProperties properties) {
+		return new PromptSanitizer(properties.getMaxLogChars());
+	}
+
+	@Bean
+	InvestigationTools investigationTools(
+			IncidentRepository incidentRepository,
+			EvidenceRepository evidenceRepository,
+			EventRepository eventRepository,
+			RedactionHook redactionHook,
+			PromptSanitizer promptSanitizer,
+			InvestigationProperties properties
+	) {
+		return new RepositoryInvestigationTools(
+				incidentRepository,
+				evidenceRepository,
+				eventRepository,
+				redactionHook,
+				promptSanitizer,
+				properties.getToolRowLimit()
+		);
+	}
+
+	@Bean
+	LlmClient llmClient(ObjectProvider<ChatModel> chatModel, InvestigationProperties properties) {
+		ChatModel model = chatModel.getIfAvailable();
+		if (model != null && "openai".equalsIgnoreCase(properties.getProvider())) {
+			return new SpringAiLlmClient(model, "openai");
+		}
+		return new UnavailableLlmClient(properties.getProvider());
+	}
+
+	@Bean
+	AiInvestigator aiInvestigator(
+			InvestigationProperties properties,
+			InvestigationTools investigationTools,
+			LlmClient llmClient
+	) {
+		String provider = properties.getProvider() == null ? "noop" : properties.getProvider().trim().toLowerCase();
+		return switch (provider) {
+			case "fake" -> new FakeAiInvestigator(investigationTools, properties.getMaxToolCalls());
+			case "openai" -> new ToolBoundedAiInvestigator(
+					investigationTools,
+					llmClient,
+					properties.getMaxToolCalls(),
+					Duration.ofSeconds(Math.max(1, properties.getTimeoutSeconds()))
+			);
+			default -> new NoOpAiInvestigator();
+		};
 	}
 
 	@Bean
@@ -63,13 +128,13 @@ public class LogDetectiveConfig {
 			IncidentRepository incidentRepository,
 			EvidenceRepository evidenceRepository,
 			InvestigateIncidentUseCase investigateIncidentUseCase,
-			AiInvestigator aiInvestigator
+			InvestigationReportRepository reportRepository
 	) {
 		return new RequestInvestigationUseCase(
 				incidentRepository,
 				evidenceRepository,
 				investigateIncidentUseCase,
-				aiInvestigator
+				reportRepository
 		);
 	}
 

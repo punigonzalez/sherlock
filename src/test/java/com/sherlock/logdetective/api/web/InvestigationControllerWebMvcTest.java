@@ -18,8 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase;
-import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase.InvestigationStatus;
 import com.sherlock.logdetective.investigation.application.RequestInvestigationUseCase.InvestigationView;
+import com.sherlock.logdetective.investigation.domain.InvestigationReport.InvestigationStatus;
 
 class InvestigationControllerWebMvcTest {
 
@@ -38,10 +38,15 @@ class InvestigationControllerWebMvcTest {
 	void requestInvestigationReturnsHonestNoOp() throws Exception {
 		UUID id = UUID.randomUUID();
 		when(requestInvestigationUseCase.request(id)).thenReturn(Optional.of(new InvestigationView(
+				UUID.randomUUID(),
 				id,
 				InvestigationStatus.NOOP_UNAVAILABLE,
+				"noop",
 				true,
 				"AI investigation disabled (NoOp).",
+				"",
+				"NONE",
+				List.of(),
 				List.of(),
 				Instant.parse("2026-10-20T15:00:00Z")
 		)));
@@ -50,7 +55,7 @@ class InvestigationControllerWebMvcTest {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.status").value("NOOP_UNAVAILABLE"))
 				.andExpect(jsonPath("$.aiUnavailable").value(true))
-				.andExpect(jsonPath("$.note").value("AI investigator is NoOp; this is not a real diagnosis."));
+				.andExpect(jsonPath("$.note").value("AI diagnosis unavailable or NoOp; deterministic detection remains valid."));
 	}
 
 	@Test

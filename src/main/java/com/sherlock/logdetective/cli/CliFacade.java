@@ -238,16 +238,21 @@ public final class CliFacade {
 
 	private static void printInvestigation(PrintStream out, InvestigationView view) {
 		out.printf(
-				"incident=%s status=%s aiUnavailable=%s createdAt=%s%n",
+				"report=%s incident=%s status=%s provider=%s aiUnavailable=%s confidence=%s createdAt=%s%n",
+				view.reportId(),
 				view.incidentId(),
 				view.status(),
+				view.provider(),
 				view.aiUnavailable(),
+				view.confidence(),
 				view.createdAt()
 		);
 		out.println("summary=" + view.summary());
+		out.println("hypothesis=" + view.hypothesis());
 		out.println("evidenceCitations=" + view.evidenceCitationIds());
+		out.println("toolCalls=" + view.toolCalls());
 		if (view.aiUnavailable()) {
-			out.println("note=AI investigator is NoOp; this is not a real diagnosis.");
+			out.println("note=AI diagnosis unavailable or NoOp; deterministic detection remains valid.");
 		}
 	}
 
