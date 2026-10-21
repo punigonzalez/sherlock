@@ -26,9 +26,10 @@ set -a && source .env && set +a
 # Health: http://127.0.0.1:8080/actuator/health
 ```
 
-Bind defaults to **127.0.0.1**. File paths must stay under `logdetective.ingestion.allowlist-base-dir` (`./logs`).
+Bind defaults to **127.0.0.1**. Default `.env.example` file ingest points at TuConsultorio  
+`/Users/punigonzalez/Documents/TuConsultorio/consul/logs/consul.log` (allowlist = that `logs/` dir).
 
-Exact demo commands for Santiago: see Cursor project store `docs/local-demo.md`.
+Exact demo commands: Cursor store `docs/local-demo.md` and dual-run `docs/tuconsultorio-sherlock-local.md`.
 
 ## Docs
 
