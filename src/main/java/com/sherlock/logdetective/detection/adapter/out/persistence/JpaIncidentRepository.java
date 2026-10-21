@@ -4,12 +4,17 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sherlock.logdetective.detection.domain.ErrorFingerprint;
 import com.sherlock.logdetective.detection.domain.Incident;
+import com.sherlock.logdetective.detection.domain.IncidentStatus;
 import com.sherlock.logdetective.detection.port.out.IncidentRepository;
+import com.sherlock.logdetective.shared.domain.PageResult;
 
 @Repository
 @Transactional
@@ -62,5 +67,20 @@ public class JpaIncidentRepository implements IncidentRepository {
 			entity.getEvidenceLinks().size();
 			return IncidentMapper.toDomain(entity);
 		});
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PageResult<Incident> findPage(int page, int size, Optional<IncidentStatus> status) {
+		PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastSeenAt"));
+		Page<IncidentEntity> result = status
+				.map(s -> incidents.findByStatus(s.name(), pageable))
+				.orElseGet(() -> incidents.findAll(pageable));
+		var items = result.getContent().stream().map(entity -> {
+			entity.getStatusHistory().size();
+			entity.getEvidenceLinks().size();
+			return IncidentMapper.toDomain(entity);
+		}).toList();
+		return PageResult.of(items, page, size, result.getTotalElements());
 	}
 }

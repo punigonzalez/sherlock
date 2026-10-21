@@ -13,6 +13,8 @@ public class FileSourceProperties {
 	private boolean enabled = false;
 	private int batchSize = 100;
 	private long pollIntervalMs = 2000L;
+	/** Absolute or relative base directory; API/CLI paths must resolve under this root. */
+	private String allowlistBaseDir = "./logs";
 	private List<SourceConfig> sources = new ArrayList<>();
 
 	public boolean isEnabled() {
@@ -37,6 +39,14 @@ public class FileSourceProperties {
 
 	public void setPollIntervalMs(long pollIntervalMs) {
 		this.pollIntervalMs = pollIntervalMs;
+	}
+
+	public String getAllowlistBaseDir() {
+		return allowlistBaseDir;
+	}
+
+	public void setAllowlistBaseDir(String allowlistBaseDir) {
+		this.allowlistBaseDir = allowlistBaseDir;
 	}
 
 	public List<SourceConfig> getSources() {

@@ -27,6 +27,8 @@ management:
       show-details: when_authorized
 
 server:
+  # Local MVP: bind loopback only (override with SERVER_ADDRESS if needed).
+  address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${SERVER_PORT:8080}
 
 # Local file ingestion (paths via env; no secrets). Disabled by default.
@@ -48,6 +50,8 @@ logdetective:
     enabled: ${LOGDETECTIVE_INGESTION_ENABLED:false}
     batch-size: ${LOGDETECTIVE_INGESTION_BATCH_SIZE:100}
     poll-interval-ms: ${LOGDETECTIVE_INGESTION_POLL_INTERVAL_MS:2000}
+    # API/CLI paths must resolve under this directory (traversal protection).
+    allowlist-base-dir: ${LOGDETECTIVE_ALLOWLIST_BASE_DIR:./logs}
     sources:
       - id: ${LOGDETECTIVE_FILE_SOURCE_ID:app-log}
         type: FILE

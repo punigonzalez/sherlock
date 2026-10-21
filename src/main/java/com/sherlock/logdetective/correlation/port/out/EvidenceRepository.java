@@ -1,5 +1,6 @@
 package com.sherlock.logdetective.correlation.port.out;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,4 +14,6 @@ public interface EvidenceRepository {
 	Optional<Evidence> findById(EvidenceId id);
 
 	void linkToIncident(UUID incidentId, Evidence evidence);
+
+	List<Evidence> findByIncidentId(UUID incidentId);
 }

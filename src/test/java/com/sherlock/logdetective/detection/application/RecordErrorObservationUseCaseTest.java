@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import com.sherlock.logdetective.detection.domain.Severity;
 import com.sherlock.logdetective.detection.domain.fingerprint.ErrorFingerprintCalculator;
 import com.sherlock.logdetective.detection.port.out.IncidentRepository;
 import com.sherlock.logdetective.ingestion.domain.EventLevel;
+import com.sherlock.logdetective.shared.domain.PageResult;
 
 class RecordErrorObservationUseCaseTest {
 
@@ -71,6 +73,17 @@ class RecordErrorObservationUseCaseTest {
 		@Override
 		public Optional<Incident> findByFingerprint(ErrorFingerprint fingerprint) {
 			return Optional.ofNullable(byFingerprint.get(fingerprint.value()));
+		}
+
+		@Override
+		public PageResult<Incident> findPage(int page, int size, Optional<IncidentStatus> status) {
+			List<Incident> all = byId.values().stream()
+					.filter(i -> status.isEmpty() || i.status() == status.get())
+					.sorted((a, b) -> b.lastSeenAt().compareTo(a.lastSeenAt()))
+					.toList();
+			int from = Math.min(page * size, all.size());
+			int to = Math.min(from + size, all.size());
+			return PageResult.of(all.subList(from, to), page, size, all.size());
 		}
 
 		int size() {

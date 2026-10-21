@@ -97,10 +97,11 @@ src/main/java/com/sherlock/
       adapter/...
     investigation/
       domain/          # InvestigationReport (evidence citations required)
-      application/     # InvestigateIncidentUseCase
+      application/     # InvestigateIncidentUseCase, RequestInvestigationUseCase
       port/out/        # AiInvestigator
       adapter/out/     # NoOpAiInvestigator, FakeAiInvestigator, GcpAiInvestigator
-    api/               # cross-cutting DTOs / OpenAPI if needed
+    api/               # REST DTOs + controllers (/api/v1) — Phase 5
+    cli/               # lightweight --cli ApplicationRunner — Phase 5
 
 src/main/resources/
   application.yml                            # replace/extend .properties in Phase 1
@@ -270,7 +271,7 @@ public record FetchCursor(String opaque) {} // e.g. file byte offset / page toke
 | **2** | Domain model + error fingerprints + incident lifecycle + JPA persistence (grouping by fingerprint). **Done** |
 | **3** | File ingestion pipeline (`LogSource` + File source; parsers; checkpointing; wire errors to incidents). **Done** |
 | **4** | Threshold/spike detection + trace/temporal correlation + evidence links. **Done** — see `internal/phase-4-completion.md` |
-| **5** | Query API / REST-CLI polish: incidents, events, evidence |
+| **5** | Query API / REST-CLI polish: sources, incidents, evidence, honest NoOp investigation. **Done** — see `docs/api-cli.md` |
 | **6** | Optional real AI provider (NoOp already present); optional GCP adapter |
 | **7** | Hardening: validation, redaction basics, Dockerfile (Java 25 base) |
 | **8** | Polish: sample datasets, docs, demo script; quality gate (coverage on domain) |

@@ -2,7 +2,9 @@ package com.sherlock.logdetective.correlation.adapter.out.persistence;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,6 +78,31 @@ public class JpaEvidenceRepository implements EvidenceRepository {
 				domainEvidence.strength().name(),
 				domainEvidence.reason()
 		);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Evidence> findByIncidentId(UUID incidentId) {
+		List<String> refs = jdbcTemplate.query(
+				"""
+						SELECT evidence_ref FROM incident_evidence_links
+						WHERE incident_id = ?
+						ORDER BY linked_at ASC
+						""",
+				(rs, rowNum) -> rs.getString(1),
+				incidentId
+		);
+		List<Evidence> result = new ArrayList<>();
+		for (String ref : refs) {
+			try {
+				UUID evidenceId = UUID.fromString(ref);
+				evidence.findById(evidenceId).map(JpaEvidenceRepository::toDomain).ifPresent(result::add);
+			}
+			catch (IllegalArgumentException ignored) {
+				// Legacy opaque evidence_ref strings are skipped for structured evidence listing.
+			}
+		}
+		return List.copyOf(result);
 	}
 
 	private static Evidence toDomain(EvidenceEntity entity) {

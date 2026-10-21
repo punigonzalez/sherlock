@@ -24,8 +24,10 @@ import com.sherlock.logdetective.detection.application.RecordErrorObservationUse
 import com.sherlock.logdetective.detection.domain.DetectionRulesConfig;
 import com.sherlock.logdetective.detection.domain.ErrorFingerprint;
 import com.sherlock.logdetective.detection.domain.Incident;
+import com.sherlock.logdetective.detection.domain.IncidentStatus;
 import com.sherlock.logdetective.detection.domain.fingerprint.ErrorFingerprintCalculator;
 import com.sherlock.logdetective.detection.port.out.IncidentRepository;
+import com.sherlock.logdetective.shared.domain.PageResult;
 import com.sherlock.logdetective.ingestion.adapter.out.file.FileLogSource;
 import com.sherlock.logdetective.ingestion.domain.CanonicalEvent;
 import com.sherlock.logdetective.ingestion.domain.LogSourceId;
@@ -159,10 +161,21 @@ class IngestLogsUseCaseTest {
 		public Optional<Incident> findByFingerprint(ErrorFingerprint fingerprint) {
 			return Optional.ofNullable(byFingerprint.get(fingerprint.value()));
 		}
+
+		@Override
+		public PageResult<Incident> findPage(int page, int size, Optional<IncidentStatus> status) {
+			List<Incident> all = byFingerprint.values().stream()
+					.filter(i -> status.isEmpty() || i.status() == status.get())
+					.toList();
+			int from = Math.min(page * size, all.size());
+			int to = Math.min(from + size, all.size());
+			return PageResult.of(all.subList(from, to), page, size, all.size());
+		}
 	}
 
 	private static final class InMemoryEvidenceRepository implements EvidenceRepository {
 		private final Map<UUID, Evidence> byId = new HashMap<>();
+		private final Map<UUID, List<UUID>> links = new HashMap<>();
 
 		@Override
 		public Evidence save(Evidence evidence) {
@@ -177,7 +190,16 @@ class IngestLogsUseCaseTest {
 
 		@Override
 		public void linkToIncident(UUID incidentId, Evidence evidence) {
-			// no-op for unit test
+			links.computeIfAbsent(incidentId, ignored -> new java.util.ArrayList<>())
+					.add(evidence.id().value());
+		}
+
+		@Override
+		public List<Evidence> findByIncidentId(UUID incidentId) {
+			return links.getOrDefault(incidentId, List.of()).stream()
+					.map(byId::get)
+					.filter(java.util.Objects::nonNull)
+					.toList();
 		}
 	}
 }
