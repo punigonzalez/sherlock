@@ -1,0 +1,9 @@
+2026-10-20 12:00:00,001 INFO [main] com.example.App - started
+2026-10-20 12:00:01,100 ERROR [worker] com.example.Payments - Payment failed for order 998877 id=550e8400-e29b-41d4-a716-446655440000
+java.lang.IllegalStateException: boom
+	at com.example.Payments.charge(Payments.java:42)
+	at com.example.Payments.run(Payments.java:15)
+Caused by: java.io.IOException: disk
+	at com.example.Disk.write(Disk.java:9)
+{"timestamp":"2026-10-20T12:00:02Z","level":"ERROR","service":"billing","message":"Timeout talking to redis aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","logger":"net.Client"}
+2026-10-20 12:00:03,000 INFO [main] com.example.App - user alice@example.com authenticated with bearer sk-test-secret-token

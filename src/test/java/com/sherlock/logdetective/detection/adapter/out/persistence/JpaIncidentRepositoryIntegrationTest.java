@@ -64,10 +64,9 @@ class JpaIncidentRepositoryIntegrationTest {
 		assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM incidents", Integer.class)).isEqualTo(1);
 		assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM incident_evidence_links", Integer.class)).isEqualTo(2);
 		assertThat(jdbcTemplate.queryForObject(
-				"SELECT COUNT(*) FROM app_schema_meta WHERE schema_version = ?",
-				Integer.class,
-				"phase-2-incidents"
-		)).isEqualTo(1);
+				"SELECT schema_version FROM app_schema_meta WHERE id = 1",
+				String.class
+		)).isEqualTo("phase-3-ingestion");
 	}
 
 	@Test

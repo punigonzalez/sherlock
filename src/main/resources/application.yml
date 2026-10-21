@@ -28,3 +28,16 @@ management:
 
 server:
   port: ${SERVER_PORT:8080}
+
+# Local file ingestion (paths via env; no secrets). Disabled by default.
+logdetective:
+  ingestion:
+    enabled: ${LOGDETECTIVE_INGESTION_ENABLED:false}
+    batch-size: ${LOGDETECTIVE_INGESTION_BATCH_SIZE:100}
+    poll-interval-ms: ${LOGDETECTIVE_INGESTION_POLL_INTERVAL_MS:2000}
+    sources:
+      - id: ${LOGDETECTIVE_FILE_SOURCE_ID:app-log}
+        type: FILE
+        path: ${LOGDETECTIVE_FILE_SOURCE_PATH:./logs/app.log}
+        encoding: ${LOGDETECTIVE_FILE_SOURCE_ENCODING:UTF-8}
+        enabled: ${LOGDETECTIVE_FILE_SOURCE_ENABLED:true}

@@ -16,5 +16,7 @@ public interface EventRepository {
 
 	Optional<CanonicalEvent> findById(UUID id);
 
+	Optional<CanonicalEvent> findBySourcePayloadId(LogSourceId sourceId, String sourcePayloadId);
+
 	List<CanonicalEvent> findBySourceId(LogSourceId sourceId);
 }
