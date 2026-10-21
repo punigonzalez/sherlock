@@ -8,9 +8,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sherlock.logdetective.detection.application.EvaluateDetectionsUseCase;
 import com.sherlock.logdetective.detection.application.RecordErrorObservationUseCase;
 import com.sherlock.logdetective.detection.domain.ErrorObservation;
-import com.sherlock.logdetective.detection.domain.Severity;
+import com.sherlock.logdetective.detection.domain.SeverityClassifier;
 import com.sherlock.logdetective.ingestion.domain.CanonicalEvent;
 import com.sherlock.logdetective.ingestion.domain.EventLevel;
 import com.sherlock.logdetective.ingestion.domain.LogSourceId;
@@ -26,7 +27,7 @@ import com.sherlock.logdetective.ingestion.port.out.SourceCheckpointStore;
 
 /**
  * Pipeline: acquire → validate source → parse → normalize → enrich → redact → dedup →
- * deliver errors to detection → checkpoint after safe accept.
+ * deliver errors to detection → evaluate threshold/spike/correlation → checkpoint.
  */
 public final class IngestLogsUseCase {
 
@@ -35,19 +36,24 @@ public final class IngestLogsUseCase {
 	private final LogParser logParser;
 	private final RedactionHook redactionHook;
 	private final RecordErrorObservationUseCase recordErrorObservationUseCase;
+	private final EvaluateDetectionsUseCase evaluateDetectionsUseCase;
+	private final SeverityClassifier severityClassifier;
 
 	public IngestLogsUseCase(
 			EventRepository eventRepository,
 			SourceCheckpointStore checkpointStore,
 			LogParser logParser,
 			RedactionHook redactionHook,
-			RecordErrorObservationUseCase recordErrorObservationUseCase
+			RecordErrorObservationUseCase recordErrorObservationUseCase,
+			EvaluateDetectionsUseCase evaluateDetectionsUseCase
 	) {
 		this.eventRepository = Objects.requireNonNull(eventRepository);
 		this.checkpointStore = Objects.requireNonNull(checkpointStore);
 		this.logParser = Objects.requireNonNull(logParser);
 		this.redactionHook = Objects.requireNonNull(redactionHook);
 		this.recordErrorObservationUseCase = Objects.requireNonNull(recordErrorObservationUseCase);
+		this.evaluateDetectionsUseCase = Objects.requireNonNull(evaluateDetectionsUseCase);
+		this.severityClassifier = new SeverityClassifier();
 	}
 
 	public IngestBatchResult ingest(LogSource source, int limit) {
@@ -81,10 +87,14 @@ public final class IngestLogsUseCase {
 			if (!parsed.success()) {
 				parseFailures++;
 			}
-			if (saved.level() == EventLevel.ERROR) {
+			if (severityClassifier.isErrorSignal(saved.level())) {
 				recordErrorObservationUseCase.execute(toObservation(saved));
 				errorsRouted++;
 			}
+		}
+
+		if (accepted > 0) {
+			evaluateDetectionsUseCase.evaluate(Instant.now());
 		}
 
 		FetchCursor next = source.advance(cursor, batch);
@@ -140,11 +150,7 @@ public final class IngestLogsUseCase {
 		);
 	}
 
-	private static ErrorObservation toObservation(CanonicalEvent event) {
-		Severity severity = switch (event.level()) {
-			case ERROR -> Severity.HIGH;
-			default -> Severity.MEDIUM;
-		};
+	private ErrorObservation toObservation(CanonicalEvent event) {
 		return new ErrorObservation(
 				event.timestamp(),
 				event.level(),
@@ -153,10 +159,11 @@ public final class IngestLogsUseCase {
 				event.service(),
 				event.host(),
 				Optional.of(event.id().toString()),
-				severity,
+				severityClassifier.classify(event.level()),
 				Map.of(
 						"sourceId", event.sourceId().value(),
-						"sourcePayloadId", event.sourcePayloadId()
+						"sourcePayloadId", event.sourcePayloadId(),
+						"detectionKind", "ERROR_SEVERITY"
 				)
 		);
 	}

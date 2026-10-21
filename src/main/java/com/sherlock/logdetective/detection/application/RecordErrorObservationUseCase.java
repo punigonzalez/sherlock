@@ -33,6 +33,15 @@ public final class RecordErrorObservationUseCase {
 				observation.logger(),
 				observation.service()
 		);
+		return executeWithFingerprint(fingerprint, observation);
+	}
+
+	/**
+	 * Upsert using a caller-provided fingerprint (e.g. synthetic detection fingerprints).
+	 */
+	public Incident executeWithFingerprint(ErrorFingerprint fingerprint, ErrorObservation observation) {
+		Objects.requireNonNull(fingerprint, "fingerprint");
+		Objects.requireNonNull(observation, "observation");
 
 		Incident incident = incidentRepository.findByFingerprint(fingerprint)
 				.map(existing -> {

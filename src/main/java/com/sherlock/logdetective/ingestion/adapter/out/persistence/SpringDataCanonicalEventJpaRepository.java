@@ -1,5 +1,6 @@
 package com.sherlock.logdetective.ingestion.adapter.out.persistence;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,4 +12,6 @@ interface SpringDataCanonicalEventJpaRepository extends JpaRepository<CanonicalE
 	Optional<CanonicalEventEntity> findBySourceIdAndSourcePayloadId(String sourceId, String sourcePayloadId);
 
 	List<CanonicalEventEntity> findBySourceIdOrderByEventTimestampAsc(String sourceId);
+
+	List<CanonicalEventEntity> findByEventTimestampBetweenOrderByEventTimestampAsc(Instant from, Instant to);
 }

@@ -268,8 +268,8 @@ public record FetchCursor(String opaque) {} // e.g. file byte offset / page toke
 |-------|------|
 | **1** | Keep Boot 4.1.1 / Java 25; Docker Compose PostgreSQL; Flyway baseline; hexagonal skeleton; health/`contextLoads` green under JDK 25 |
 | **2** | Domain model + error fingerprints + incident lifecycle + JPA persistence (grouping by fingerprint). **Done** |
-| **3** | File ingestion pipeline (`LogSource` + File source; parsers; checkpointing; wire errors to incidents). **Done** — see `internal/phase-3-completion.md` |
-| **4** | Detection rules / correlation engines beyond fingerprint grouping |
+| **3** | File ingestion pipeline (`LogSource` + File source; parsers; checkpointing; wire errors to incidents). **Done** |
+| **4** | Threshold/spike detection + trace/temporal correlation + evidence links. **Done** — see `internal/phase-4-completion.md` |
 | **5** | Query API / REST-CLI polish: incidents, events, evidence |
 | **6** | Optional real AI provider (NoOp already present); optional GCP adapter |
 | **7** | Hardening: validation, redaction basics, Dockerfile (Java 25 base) |

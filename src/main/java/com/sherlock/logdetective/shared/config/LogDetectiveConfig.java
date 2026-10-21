@@ -5,7 +5,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import com.sherlock.logdetective.correlation.application.CorrelateEvidenceUseCase;
+import com.sherlock.logdetective.correlation.port.out.EvidenceRepository;
+import com.sherlock.logdetective.detection.adapter.in.DetectionProperties;
+import com.sherlock.logdetective.detection.application.EvaluateDetectionsUseCase;
 import com.sherlock.logdetective.detection.application.RecordErrorObservationUseCase;
+import com.sherlock.logdetective.detection.domain.DetectionRulesConfig;
 import com.sherlock.logdetective.detection.domain.fingerprint.ErrorFingerprintCalculator;
 import com.sherlock.logdetective.detection.port.out.IncidentRepository;
 import com.sherlock.logdetective.ingestion.adapter.in.FileSourceProperties;
@@ -22,7 +27,7 @@ import com.sherlock.logdetective.investigation.port.out.AiInvestigator;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties(FileSourceProperties.class)
+@EnableConfigurationProperties({ FileSourceProperties.class, DetectionProperties.class })
 public class LogDetectiveConfig {
 
 	@Bean
@@ -49,6 +54,35 @@ public class LogDetectiveConfig {
 	}
 
 	@Bean
+	DetectionRulesConfig detectionRulesConfig(DetectionProperties detectionProperties) {
+		return detectionProperties.toRulesConfig();
+	}
+
+	@Bean
+	CorrelateEvidenceUseCase correlateEvidenceUseCase(DetectionRulesConfig detectionRulesConfig) {
+		return new CorrelateEvidenceUseCase(detectionRulesConfig.correlation());
+	}
+
+	@Bean
+	EvaluateDetectionsUseCase evaluateDetectionsUseCase(
+			DetectionRulesConfig detectionRulesConfig,
+			EventRepository eventRepository,
+			RecordErrorObservationUseCase recordErrorObservationUseCase,
+			EvidenceRepository evidenceRepository,
+			CorrelateEvidenceUseCase correlateEvidenceUseCase,
+			ErrorFingerprintCalculator errorFingerprintCalculator
+	) {
+		return new EvaluateDetectionsUseCase(
+				detectionRulesConfig,
+				eventRepository,
+				recordErrorObservationUseCase,
+				evidenceRepository,
+				correlateEvidenceUseCase,
+				errorFingerprintCalculator
+		);
+	}
+
+	@Bean
 	LogParser logParser() {
 		return new CompositeLogParser();
 	}
@@ -64,14 +98,16 @@ public class LogDetectiveConfig {
 			SourceCheckpointStore checkpointStore,
 			LogParser logParser,
 			RedactionHook redactionHook,
-			RecordErrorObservationUseCase recordErrorObservationUseCase
+			RecordErrorObservationUseCase recordErrorObservationUseCase,
+			EvaluateDetectionsUseCase evaluateDetectionsUseCase
 	) {
 		return new IngestLogsUseCase(
 				eventRepository,
 				checkpointStore,
 				logParser,
 				redactionHook,
-				recordErrorObservationUseCase
+				recordErrorObservationUseCase,
+				evaluateDetectionsUseCase
 		);
 	}
 }

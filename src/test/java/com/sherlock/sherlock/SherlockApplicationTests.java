@@ -33,14 +33,14 @@ class SherlockApplicationTests {
 	}
 
 	@Test
-	void flywayMigrationsAppliedThroughPhase3() {
+	void flywayMigrationsAppliedThroughPhase4() {
 		assertThat(jdbcTemplate.queryForObject(
 				"SELECT COUNT(*) FROM flyway_schema_history WHERE success = true",
 				Integer.class
-		)).isGreaterThanOrEqualTo(3);
+		)).isGreaterThanOrEqualTo(4);
 		assertThat(jdbcTemplate.queryForObject(
 				"SELECT schema_version FROM app_schema_meta WHERE id = 1",
 				String.class
-		)).isEqualTo("phase-3-ingestion");
+		)).isEqualTo("phase-4-detection");
 	}
 }

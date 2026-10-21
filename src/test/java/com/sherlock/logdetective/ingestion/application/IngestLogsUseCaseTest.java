@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.sherlock.logdetective.correlation.application.CorrelateEvidenceUseCase;
+import com.sherlock.logdetective.correlation.domain.Evidence;
+import com.sherlock.logdetective.correlation.domain.EvidenceId;
+import com.sherlock.logdetective.correlation.port.out.EvidenceRepository;
+import com.sherlock.logdetective.detection.application.EvaluateDetectionsUseCase;
 import com.sherlock.logdetective.detection.application.RecordErrorObservationUseCase;
+import com.sherlock.logdetective.detection.domain.DetectionRulesConfig;
 import com.sherlock.logdetective.detection.domain.ErrorFingerprint;
 import com.sherlock.logdetective.detection.domain.Incident;
 import com.sherlock.logdetective.detection.domain.fingerprint.ErrorFingerprintCalculator;
@@ -41,16 +48,25 @@ class IngestLogsUseCaseTest {
 		InMemoryEventRepository events = new InMemoryEventRepository();
 		InMemoryCheckpointStore checkpoints = new InMemoryCheckpointStore();
 		CountingIncidentRepository incidents = new CountingIncidentRepository();
-		RecordErrorObservationUseCase recordErrors = new RecordErrorObservationUseCase(
-				incidents,
-				new ErrorFingerprintCalculator()
+		InMemoryEvidenceRepository evidence = new InMemoryEvidenceRepository();
+		ErrorFingerprintCalculator calculator = new ErrorFingerprintCalculator();
+		RecordErrorObservationUseCase recordErrors = new RecordErrorObservationUseCase(incidents, calculator);
+		DetectionRulesConfig rules = DetectionRulesConfig.defaults();
+		EvaluateDetectionsUseCase evaluate = new EvaluateDetectionsUseCase(
+				rules,
+				events,
+				recordErrors,
+				evidence,
+				new CorrelateEvidenceUseCase(rules.correlation()),
+				calculator
 		);
 		IngestLogsUseCase useCase = new IngestLogsUseCase(
 				events,
 				checkpoints,
 				new CompositeLogParser(),
 				new BasicRedactionHook(),
-				recordErrors
+				recordErrors,
+				evaluate
 		);
 
 		FileLogSource source = new FileLogSource(new LogSourceId("app-log"), log);
@@ -64,7 +80,6 @@ class IngestLogsUseCaseTest {
 
 		IngestBatchResult second = useCase.ingest(source, 100);
 		assertThat(second.accepted()).isZero();
-		assertThat(second.duplicates() + second.fetched()).isGreaterThanOrEqualTo(0);
 		assertThat(checkpoints.load(new LogSourceId("app-log"))).isPresent();
 	}
 
@@ -92,6 +107,13 @@ class IngestLogsUseCaseTest {
 		@Override
 		public List<CanonicalEvent> findBySourceId(LogSourceId sourceId) {
 			return byPayload.values().stream().filter(e -> e.sourceId().equals(sourceId)).toList();
+		}
+
+		@Override
+		public List<CanonicalEvent> findBetween(Instant fromInclusive, Instant toInclusive) {
+			return byId.values().stream()
+					.filter(e -> !e.timestamp().isBefore(fromInclusive) && !e.timestamp().isAfter(toInclusive))
+					.toList();
 		}
 
 		List<CanonicalEvent> all() {
@@ -136,6 +158,26 @@ class IngestLogsUseCaseTest {
 		@Override
 		public Optional<Incident> findByFingerprint(ErrorFingerprint fingerprint) {
 			return Optional.ofNullable(byFingerprint.get(fingerprint.value()));
+		}
+	}
+
+	private static final class InMemoryEvidenceRepository implements EvidenceRepository {
+		private final Map<UUID, Evidence> byId = new HashMap<>();
+
+		@Override
+		public Evidence save(Evidence evidence) {
+			byId.put(evidence.id().value(), evidence);
+			return evidence;
+		}
+
+		@Override
+		public Optional<Evidence> findById(EvidenceId id) {
+			return Optional.ofNullable(byId.get(id.value()));
+		}
+
+		@Override
+		public void linkToIncident(UUID incidentId, Evidence evidence) {
+			// no-op for unit test
 		}
 	}
 }

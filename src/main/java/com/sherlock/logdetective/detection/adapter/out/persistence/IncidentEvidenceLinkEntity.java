@@ -28,6 +28,12 @@ public class IncidentEvidenceLinkEntity {
 	@Column(name = "linked_at", nullable = false)
 	private Instant linkedAt;
 
+	@Column(name = "strength")
+	private String strength;
+
+	@Column(name = "reason")
+	private String reason;
+
 	protected IncidentEvidenceLinkEntity() {
 	}
 
@@ -40,5 +46,13 @@ public class IncidentEvidenceLinkEntity {
 
 	public String getEvidenceRef() {
 		return evidenceRef;
+	}
+
+	public String getStrength() {
+		return strength;
+	}
+
+	public String getReason() {
+		return reason;
 	}
 }

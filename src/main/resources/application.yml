@@ -31,6 +31,19 @@ server:
 
 # Local file ingestion (paths via env; no secrets). Disabled by default.
 logdetective:
+  detection:
+    enabled: ${LOGDETECTIVE_DETECTION_ENABLED:true}
+    threshold:
+      window-seconds: ${LOGDETECTIVE_THRESHOLD_WINDOW_SECONDS:60}
+      min-error-count: ${LOGDETECTIVE_THRESHOLD_MIN_ERRORS:5}
+    spike:
+      window-seconds: ${LOGDETECTIVE_SPIKE_WINDOW_SECONDS:60}
+      baseline-windows: ${LOGDETECTIVE_SPIKE_BASELINE_WINDOWS:3}
+      multiplier: ${LOGDETECTIVE_SPIKE_MULTIPLIER:3.0}
+      min-error-count: ${LOGDETECTIVE_SPIKE_MIN_ERRORS:3}
+    correlation:
+      trace-lookback-seconds: ${LOGDETECTIVE_TRACE_LOOKBACK_SECONDS:300}
+      temporal-window-seconds: ${LOGDETECTIVE_TEMPORAL_WINDOW_SECONDS:30}
   ingestion:
     enabled: ${LOGDETECTIVE_INGESTION_ENABLED:false}
     batch-size: ${LOGDETECTIVE_INGESTION_BATCH_SIZE:100}

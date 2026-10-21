@@ -59,7 +59,7 @@ class FileIngestionIntegrationTest {
 		assertThat(events).isGreaterThanOrEqualTo(3);
 		assertThat(checkpoints).isEqualTo(1);
 		assertThat(incidents).isGreaterThanOrEqualTo(1);
-		assertThat(schema).isEqualTo("phase-3-ingestion");
+		assertThat(schema).isEqualTo("phase-4-detection");
 
 		IngestBatchResult again = ingestLogsUseCase.ingest(source, 100);
 		assertThat(again.accepted()).isZero();

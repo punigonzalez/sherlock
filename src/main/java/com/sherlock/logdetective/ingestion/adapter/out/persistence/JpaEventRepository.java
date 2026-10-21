@@ -1,5 +1,6 @@
 package com.sherlock.logdetective.ingestion.adapter.out.persistence;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +60,14 @@ public class JpaEventRepository implements EventRepository {
 	@Transactional(readOnly = true)
 	public List<CanonicalEvent> findBySourceId(LogSourceId sourceId) {
 		return events.findBySourceIdOrderByEventTimestampAsc(sourceId.value()).stream()
+				.map(JpaEventRepository::toDomain)
+				.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<CanonicalEvent> findBetween(Instant fromInclusive, Instant toInclusive) {
+		return events.findByEventTimestampBetweenOrderByEventTimestampAsc(fromInclusive, toInclusive).stream()
 				.map(JpaEventRepository::toDomain)
 				.toList();
 	}
